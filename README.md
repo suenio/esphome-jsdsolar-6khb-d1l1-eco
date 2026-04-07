@@ -1,4 +1,4 @@
-# esphome-pipsolar
+# esphome-jsdsolar
 
 
 ESPHome example configuration to monitor and control aJSD 6KHB inverter via rs485

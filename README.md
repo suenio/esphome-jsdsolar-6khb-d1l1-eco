@@ -111,9 +111,9 @@ ota_password: YOUR_OTA_PASSWORD
 
     From Reverse engineering activities data related to time based configuration periods is stored in 6 blocks with 8 registers per block starting at register 0x2600. Each block contains:
 
-      Register 1 - Bit controls responsible for settings of charge, discharge, once, weekly params in menu
+      Register 0 - Bit controls responsible for settings of charge, discharge, once, weekly params in menu
           
-          First 4 bits of Register 1
+          First 4 bits of Register 0
             Register0 Bit0-1
                if value 0 this time period is disabled  
                if value 1 this time period is in charge mode and enabled 
@@ -123,7 +123,7 @@ ota_password: YOUR_OTA_PASSWORD
               if set to 1 is in weekly mode and is using daily time range and days activated within a week (Register0 Bits-4-10)  
             Register0 Bit3 - TBD but so far always set to 0 
 
-          Next 7 bits of Register 1 - used if time based control is set to weekly
+          Next 7 bits of Register 0 - used if time based control is set to weekly
             Register0 Bit4 - if 0 Monday is not actie for time control and if 1 Monday is active for time control
             Register0 Bit5 - if 0 Tuesday is not actie for time control and if 1 Tuesday is active for time control
             Register0 Bit6 - if 0 Wednesday is not actie for time control and if 1 Wednesday is active for time control
@@ -152,10 +152,10 @@ ota_password: YOUR_OTA_PASSWORD
       
       Register 5 - used to store definition of Battery Level SOC (%) to stop activity (either charge or discharge) 
       
-      Register 6 - TBD but so far always value 0x01C2 (this maybe reference year for date calculation in "once mode")
+      Register 6 - TBD but so far always value 0x01C2 (450 decimal)
       
       Register 7 - used to store definition of active day when in "once active" mode
-      
+
             Register7 Bit0-4 - day of the month eg. value 0x3 in those bits means 3 day of the month
             Register7 Bit5-8 - month eg. value 0x2 in those bits means February
             Register7 Bit9-Bit14 - year since 2020 but no more than 2025 eg. value 0xA in those bits means 2030 

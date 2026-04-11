@@ -1435,25 +1435,25 @@ text_sensor:
 # =========================
 
 select:
-  - platform: modbus_controller                                   
+  - platform: modbus_controller   #ok inverter settings -> QuickSettings(3) -> Work Mode                                 
     modbus_controller_id: fast
-    id: hybrid_work_mode
-    name: "${cat3} Hybrid work mode"
+    id: work_mode
+    name: "${cat3} Work Mode"
     entity_category: config
     use_write_multiple: true
     address: 0x2100
     value_type: U_WORD
     optionsmap:
-      "Self used mode": 0
+      "Self-consumption mode": 0
       "Feed-in priority mode": 1
-      "Time based control": 2
+      #"Time based control": 2
       "Back-up mode": 3
-      "Battery discharge mode": 4
+      #"Battery discharge mode": 4
   
-  - platform: modbus_controller                                   
+  - platform: modbus_controller    #ok inverter settings -> QuickSettings(4) -> Brand                               
     modbus_controller_id: fast
-    id: battery_type_selection
-    name: "${cat3} Battery type selection"
+    id: battery_barand
+    name: "${cat3} Battery Brand"
     entity_category: config
     use_write_multiple: true
     address: 0x2110
@@ -1463,10 +1463,12 @@ select:
       "Lead-Acid battery": 1
       "PYLON Lithium-ion": 2
       "Dyness Lithium-ion": 3
-      "Aobo Lithium-ion": 4
+      #"Aobo Lithium-ion": 4
       "UZ Lithium-ion": 5
-      "VestMoods Lithium-ion": 6
-      "XinYi Lithium-ion": 7  
+      #"VestMoods Lithium-ion": 6
+      #"XinYi Lithium-ion": 7 
+      "Prime VOLT-LV": 66
+      "Lithium LV": 68 
   
   - platform: modbus_controller                                   
     modbus_controller_id: fast
@@ -1525,6 +1527,18 @@ select:
       "50 Hz": 5000
       "60 Hz": 6000
 
+  - platform: modbus_controller      #ok inverter settings -> QuickSettings(4) -> Capacity Management Mode                            
+    modbus_controller_id: fast
+    id: capacity_management_mode
+    name: "${cat3} Capacity Management Mode"
+    entity_category: config
+    use_write_multiple: true
+    address: 0x2124
+    value_type: U_WORD
+    optionsmap:
+      "SOC": 0
+      "Voltage": 1
+
   - platform: modbus_controller                                   
     modbus_controller_id: fast
     id: iniverter_modbus_address
@@ -1574,22 +1588,24 @@ select:
       "KSEM": 7
       "CHINT/DDSU666": 8
   
-  - platform: modbus_controller                                   
+  - platform: modbus_controller        #ok inverter settings -> QuickSettings(3) -> Power Flow Direction                           
     modbus_controller_id: fast
-    id: digital_meter_power_direction
-    name: "${cat4} Digital Meter Power Direction"
+    id: power_flow_direction
+    name: "${cat4} Power Flow Direction"
     entity_category: config
     use_write_multiple: true
     address: 0x30B2
     value_type: U_WORD
     optionsmap:
-      "Positive": 0
-      "Negative": 1
+      #"Positive": 0
+      #"Negative": 1
+      "From Grid to Inverter":  0
+      "From Inverter to Grid": 1
 
-  - platform: modbus_controller                                   
+  - platform: modbus_controller         #ok inverter settings -> QuickSettings(3) -> Power Control                        
     modbus_controller_id: fast
-    id: power_limit_function
-    name: "${cat4} Power Limit Function"
+    id: power_control
+    name: "${cat4} Power Control"
     entity_category: config
     use_write_multiple: true
     address: 0x30B3
@@ -1597,7 +1613,8 @@ select:
     optionsmap:
       "Disable": 0
       #"Power limit by external device": 1
-      "Power limit by PVI external CT sensor": 2
+      #"Power limit by PVI external CT sensor": 2
+      "CT sensor": 2
       #"Power limit by digital meter device": 3
       
   - platform: modbus_controller                                   
@@ -1619,17 +1636,20 @@ select:
       "6000:1": 7
       "10000:1": 8
 
-  - platform: modbus_controller                                   
+  - platform: modbus_controller       #ok inverter settings -> QuickSettings(3) ->  Meter Location                             
     modbus_controller_id: fast
-    id: power_limit_mode
-    name: "${cat4} Power Limit Mode"
+    id: meter_location
+    name: "${cat4} Meter Location"
     entity_category: config
     use_write_multiple: true
     address: 0x30B5
     value_type: U_WORD
     optionsmap:
-      "CT on Grid (Meter on Grid)": 0
-      "CT on Load (Meter on Load)": 1
+      #"CT on Grid (Meter on Grid)": 0
+      #"CT on Load (Meter on Load)": 1
+      "Grid Side": 0
+      "Load Side": 1
+
 
 
   - platform: modbus_controller       #ok inverter settings -> QuickSettings(2) -> Standard Code                          
@@ -1715,10 +1735,10 @@ select:
 
 
 number:
-  - platform: modbus_controller                                   
+  - platform: modbus_controller     #ok inverter settings -> QuickSettings(2) -> Discharge Stop Voltage (V)   - this is used only if capacity management mode is set to "Voltage"                            
     modbus_controller_id: fast
-    id: stop_discharge_voltage
-    name: "${cat3} Stop discharge voltage"
+    id: discharge_stop_voltage
+    name: "${cat3} Discharge Stop Voltage"
     entity_category: config
     use_write_multiple: true
     address: 0x2113
@@ -1809,10 +1829,10 @@ number:
     max_value: 6600
     unit_of_measurement: "W"
   
-  - platform: modbus_controller                               
+  - platform: modbus_controller     #ok inverter settings -> QuickSettings(4) -> Discharge Stop SOC (%)     - this is used only if capacity management mode is set to "SOC"                      
     modbus_controller_id: fast
-    id: battery_capacity_of_discharger_end
-    name: "${cat3} Battery capacity of discharger end"
+    id: battery_discharge_stop_soc
+    name: "${cat3} Battery Discharge Stop SOC (%)"
     entity_category: config
     use_write_multiple: true
     address: 0x211B
@@ -1890,9 +1910,21 @@ number:
     min_value: 0
     max_value: 6600
     unit_of_measurement: "W"
+
+  - platform: modbus_controller     #ok inverter settings -> QuickSettings(3) -> Max Grid Feed-In Power (W)                                
+    modbus_controller_id: fast
+    id: max_grid_feed_in_power
+    name: "${cat4} Max Grid Feed-in Power"
+    entity_category: config
+    use_write_multiple: true
+    address: 0x30BA
+    value_type: U_DWORD
+    min_value: 0
+    max_value: 6000
+    unit_of_measurement: "W"
     
 switch:
-  - platform: modbus_controller
+  - platform: modbus_controller   #ok inverter on/off remote button
     modbus_controller_id: fast
     name: "${cat4} Inverter Power"
     address: 0x6001
@@ -1912,13 +1944,22 @@ switch:
     address: 0x2115
     bitmask: 0x0001
 
-  - platform: modbus_controller                                   
+  - platform: modbus_controller   #ok inverter settings -> Time Based Control                                  
     modbus_controller_id: fast
     id: time_based_control
     name: "${cat3} Time Based Control"
     entity_category: config
     register_type: holding
-    address: 0x214D
+    address: 0x214C
+    bitmask: 0x0001
+
+  - platform: modbus_controller    #ok inverter settings -> QuickSettings(6) -> Force Startup with PV Only                                
+    modbus_controller_id: fast
+    id: force_startup_with_pv_only
+    name: "${cat3} Force Startup with PV Only"
+    entity_category: config
+    register_type: holding
+    address: 0x2199
     bitmask: 0x0001
 
   - platform: modbus_controller                                   

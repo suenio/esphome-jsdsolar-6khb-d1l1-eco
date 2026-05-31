@@ -11,7 +11,7 @@ substitutions:
 esphome:
   name: ${name}
   comment: ${device_description}
-  min_version: 2024.6.0
+  min_version:  2026.4.0
 
 # Enable Home Assistant API
 api:
@@ -85,35 +85,16 @@ uart:
 
 modbus:
   id: modbus1
+  uart_id: uart_modbus
+  send_wait_time: 200ms
 
 modbus_controller:
-  - id: fast
+  - id: inverter_modbus
     address: 1
     modbus_id: modbus1
     update_interval: 30s
     #setup_priority: -10
     #command_throttle: 10ms
-
-  #- id: medium
-  #  address: 1
-  #  modbus_id: modbus1
-  #  update_interval: 5s
-  #  setup_priority: -10
-  #  command_throttle: 2ms
-
-  #- id: slow
-  #  address: 1
-  #  modbus_id: modbus1
-  #  update_interval: 5s
-  #  setup_priority: -10
-  #  command_throttle: 30ms
-  
-  #- id: very_slow
-  #  address: 1
-  #  modbus_id: modbus1
-  #  update_interval: 1s
-  #  setup_priority: -10
-  #  command_throttle: 50ms
 
 button:
 # =========================
@@ -150,8 +131,8 @@ button:
               uint16_t new_value = id(t_generator_start_time_setter).hour * 256 + id(t_generator_start_time_setter).minute;
                ESP_LOGD("main", "G New Start Time: %d : %d", id(t_generator_start_time_setter).hour, id(t_generator_start_time_setter).minute);
               if(value != new_value) {              
-                esphome::modbus_controller::ModbusCommandItem set_payload_command = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(fast, 0x2154, new_value);
-                fast->queue_command(set_payload_command);
+                esphome::modbus_controller::ModbusCommandItem set_payload_command = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(inverter_modbus, 0x2154, new_value);
+                inverter_modbus->queue_command(set_payload_command);
                 ESP_LOGD("main", "Updated Start ##########################################################");
               }
             } 
@@ -163,8 +144,8 @@ button:
               uint16_t new_value = id(t_generator_end_time_setter).hour * 256 + id(t_generator_end_time_setter).minute;
                ESP_LOGD("main", "G New Start Time: %d : %d", id(t_generator_start_time_setter).hour, id(t_generator_start_time_setter).minute);
               if(value != new_value) {              
-                esphome::modbus_controller::ModbusCommandItem set_payload_command = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(fast, 0x2155, new_value);
-                fast->queue_command(set_payload_command);
+                esphome::modbus_controller::ModbusCommandItem set_payload_command = esphome::modbus_controller::ModbusCommandItem::create_write_single_command(inverter_modbus, 0x2155, new_value);
+                inverter_modbus->queue_command(set_payload_command);
                 ESP_LOGD("main", "Updated End ##########################################################");
               }
             } 
@@ -370,8 +351,8 @@ button:
             timeBasedControlStructure.push_back(endBattery);
             timeBasedControlStructure.push_back(date);
 
-            esphome::modbus_controller::ModbusCommandItem set_payload_command = esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(fast, (0x2600 + pos), 8, timeBasedControlStructure);
-            fast->queue_command(set_payload_command);
+            esphome::modbus_controller::ModbusCommandItem set_payload_command = esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(inverter_modbus, (0x2600 + pos), 8, timeBasedControlStructure);
+            inverter_modbus->queue_command(set_payload_command);
            
 datetime:
 # =========================
@@ -415,7 +396,7 @@ sensor:
 # ⚡ SYSTEM INFORMATION
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: number_of_mppts
     name: "${cat1} Number of MPPTs"
     entity_category: DIAGNOSTIC
@@ -424,97 +405,107 @@ sensor:
     value_type: U_WORD
   
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: nominal_voltage
     name: "${cat1} Nominal Voltage"
     entity_category: DIAGNOSTIC
     address: 0x1A44
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }] 
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: nominal_frequency
     name: "${cat1} Nominal Frequency"
     entity_category: DIAGNOSTIC
     address: 0x1A45
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: Hz
-    filters: [{ multiply: 0.01 }] 
+    unit_of_measurement: "Hz"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: nominal_active_power
     name: "${cat1} Nominal Active Power"
     entity_category: DIAGNOSTIC
     address: 0x1A46
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: W
+    unit_of_measurement: "W"
     #filters: [{ multiply: 0.001 }] 
+
 # =========================
 # ⚡ GRID Info
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_voltage
     name: "${cat2} L1 Voltage"
     entity_category: DIAGNOSTIC
     address: 0x1001
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_current
     name: "${cat2} L1 Current"
     entity_category: DIAGNOSTIC
     address: 0x1002
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: A
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "A"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_power
     name: "${cat2} L1 Power"
     entity_category: DIAGNOSTIC
     address: 0x1003
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]  
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1   
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_frequency
     name: "${cat2} L1 Frequency"
     entity_category: DIAGNOSTIC
+    device_class: frequency
+    state_class: measurement
     address: 0x1005
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: Hz
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "Hz"
+    filters: 
+      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_voltage
 #    name: "${cat2} L2 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1006
 #    register_type: holding
 #    value_type: U_WORD
-#    unit_of_measurement: V
-#    filters: [{ multiply: 0.1 }]
+#    unit_of_measurement: "V"
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_current
 #    name: "${cat2} L2 Current"
 #    entity_category: DIAGNOSTIC
@@ -522,10 +513,11 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: A
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_power
 #    name: "${cat2} L2 Power"
 #    entity_category: DIAGNOSTIC
@@ -533,10 +525,11 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: W
-#    filters: [{ multiply: 0.1 }]  
+#    filters: 
+#      - multiply: 0.1   
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_frequency
 #    name: "${cat2} L2 Frequency"
 #    entity_category: DIAGNOSTIC
@@ -544,10 +537,11 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: Hz
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_voltage
 #    name: "${cat2} L3 Voltage"
 #    entity_category: DIAGNOSTIC
@@ -555,10 +549,11 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: V
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_current
 #    name: "${cat2} L3 Current"
 #    entity_category: DIAGNOSTIC
@@ -566,10 +561,11 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: A
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_power
 #    name: "${cat2} L3 Power"
 #    entity_category: DIAGNOSTIC
@@ -577,10 +573,11 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: W
-#    filters: [{ multiply: 0.1 }]  
+#    filters: 
+#      - multiply: 0.1   
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_frequency
 #    name: "${cat2} L3 Frequency"
 #    entity_category: DIAGNOSTIC
@@ -588,283 +585,329 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: Hz
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 # =========================
 # ☀️ PV
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv1_voltage
     name: "${cat2} PV1 Voltage"
     entity_category: DIAGNOSTIC
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
     address: 0x1010
     register_type: holding
     value_type: U_WORD
-    filters: [{ multiply: 0.1 }]
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv1_current
     name: "${cat2} PV1 Current"
     entity_category: DIAGNOSTIC
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
     address: 0x1011
     register_type: holding
     value_type: S_WORD
-    filters: [{ multiply: 0.01 }]
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv1_power
     name: "${cat2} PV1 Power (MPPT1)"
     entity_category: DIAGNOSTIC
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
     address: 0x1012
     register_type: holding
     value_type: U_DWORD
-    filters: [{ multiply: 0.1 }]
+    filters: 
+      - multiply: 0.1 
   
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv2_voltage
     name: "${cat2} PV2 Voltage"
     entity_category: DIAGNOSTIC
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
     address: 0x1014
     register_type: holding
     value_type: U_WORD
-    filters: [{ multiply: 0.1 }]
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv2_current
     name: "${cat2} PV2 Current"
     entity_category: DIAGNOSTIC
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
     address: 0x1015
     register_type: holding
     value_type: S_WORD
-    filters: [{ multiply: 0.01 }]
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv2_power
     name: "${cat2} PV2 Power (MPPT2)"
     entity_category: DIAGNOSTIC
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
     address: 0x1016
     register_type: holding
     value_type: U_DWORD
-    filters: [{ multiply: 0.1 }]
+    filters: 
+      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv3_voltage
 #    name: "${cat2} PV3 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1018
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv3_current
 #    name: "${cat2} PV3 Current"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1019
 #    register_type: holding
 #    value_type: S_WORD
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv3_power
 #    name: "${cat2} PV3 Power (MPPT3)"
 #    entity_category: DIAGNOSTIC
 #    address: 0x101A
 #    register_type: holding
 #    value_type: U_DWORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv4_voltage
 #    name: "${cat2} PV4 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x103E
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv4_current
 #    name: "${cat2} PV4 Current"
 #    entity_category: DIAGNOSTIC
 #    address: 0x103F
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv4_power
 #    name: "${cat2} PV4 Power (MPPT4)"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1040
 #    register_type: holding
 #    value_type: U_DWORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv5_voltage
 #    name: "${cat2} PV5 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1080
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv5_current
 #    name: "${cat2} PV5 Current"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1081
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv5_power
 #    name: "${cat2} PV5 Power (MPPT5)"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1082
 #    register_type: holding
 #    value_type: U_DWORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv6_voltage
 #    name: "${cat2} PV6 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1084
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv6_current
 #    name: "${cat2} PV6 Current"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1085
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv6_power
 #    name: "${cat2} PV6 Power (MPPT6)"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1086
 #    register_type: holding
 #    value_type: U_DWORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv7_voltage
 #    name: "${cat2} PV7 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1088
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv7_current
 #    name: "${cat2} PV7 Current"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1089
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv7_power
 #    name: "${cat2} PV7 Power (MPPT7)"
 #    entity_category: DIAGNOSTIC
 #    address: 0x108A
 #    register_type: holding
 #    value_type: U_DWORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv8_voltage
 #    name: "${cat2} PV8 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x108C
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv8_current
 #    name: "${cat2} PV8 Current"
 #    entity_category: DIAGNOSTIC
 #    address: 0x108D
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv8_power
 #    name: "${cat2} PV8 Power (MPPT8)"
 #    entity_category: DIAGNOSTIC
 #    address: 0x108E
 #    register_type: holding
 #    value_type: U_DWORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv9_voltage
 #    name: "${cat2} PV9 Voltage"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1090
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv9_current
 #    name: "${cat2} PV9 Current"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1091
 #    register_type: holding
 #    value_type: U_WORD
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller  #ok - register is here but not used for this inverter due to only 2 MPPTs
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv9_power
 #    name: "${cat9} PV6 Power (MPPT9)"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1092
 #    register_type: holding
 #    value_type: U_DWORD
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
   #- platform: modbus_controller #ok - in JSD file but does not work yet
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: pv1_energy_total
   #  name: "${cat2} PV1 Energy Total"
   #  entity_category: DIAGNOSTIC
@@ -874,7 +917,7 @@ sensor:
   #  unit_of_measurement: "Wh"
 
   #- platform: modbus_controller #ok - in JSD file but does not work yet
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: pv1_energy_today
   #  name: "${cat2} PV1 Energy Today"
   #  entity_category: DIAGNOSTIC
@@ -884,7 +927,7 @@ sensor:
   #  unit_of_measurement: "Wh"
 
   #- platform: modbus_controller #ok - in JSD file but does not work yet
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: pv2_energy_total
   #  name: "${cat2} PV2 Energy Total"
   #  entity_category: DIAGNOSTIC
@@ -894,7 +937,7 @@ sensor:
   #  unit_of_measurement: "Wh"
 
   #- platform: modbus_controller #ok - in JSD file but does not work yet
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: pv2_energy_today
   #  name: "${cat2} PV2 Energy Today"
   #  entity_category: DIAGNOSTIC
@@ -904,7 +947,7 @@ sensor:
   #  unit_of_measurement: "Wh"
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv3_energy_total
 #    name: "${cat2} PV3 Energy Total"
 #    entity_category: DIAGNOSTIC
@@ -914,7 +957,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 #
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv3_energy_today
 #    name: "${cat2} PV3 Energy Today"
 #    entity_category: DIAGNOSTIC
@@ -924,7 +967,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv4_energy_total
 #    name: "${cat2} PV4 Energy Total"
 #    entity_category: DIAGNOSTIC
@@ -934,7 +977,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 #
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv4_energy_today
 #    name: "${cat2} PV4 Energy Today"
 #    entity_category: DIAGNOSTIC
@@ -944,7 +987,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv5_energy_total
 #    name: "${cat2} PV5 Energy Total"
 #    entity_category: DIAGNOSTIC
@@ -954,7 +997,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 #
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv5_energy_today
 #    name: "${cat2} PV5 Energy Today"
 #    entity_category: DIAGNOSTIC
@@ -964,7 +1007,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv6_energy_total
 #    name: "${cat2} PV6 Energy Total"
 #    entity_category: DIAGNOSTIC
@@ -974,7 +1017,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 #
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv6_energy_today
 #    name: "${cat2} PV6 Energy Today"
 #    entity_category: DIAGNOSTIC
@@ -984,7 +1027,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv7_energy_total
 #    name: "${cat2} PV7 Energy Total"
 #    entity_category: DIAGNOSTIC
@@ -994,7 +1037,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 #
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv7_energy_today
 #    name: "${cat2} PV7 Energy Today"
 #    entity_category: DIAGNOSTIC
@@ -1004,7 +1047,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv8_energy_total
 #    name: "${cat2} PV8 Energy Total"
 #    entity_category: DIAGNOSTIC
@@ -1014,7 +1057,7 @@ sensor:
 #    unit_of_measurement: "Wh"
 #
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: pv8_energy_today
 #    name: "${cat2} PV8 Energy Today"
 #    entity_category: DIAGNOSTIC
@@ -1027,7 +1070,7 @@ sensor:
 # 🌡 SYSTEM
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: inverter_inner_temperature
     name: "${cat2} Inverter Inner Temperature"
     entity_category: DIAGNOSTIC
@@ -1040,171 +1083,191 @@ sensor:
 # ⚡ ENERGY
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: total_energy
     name: "${cat2} Total Energy"
     entity_category: DIAGNOSTIC
     address: 0x1021
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
+    unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
   
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: total_generation_time
     name: "${cat2} Total Generation Time"
     entity_category: DIAGNOSTIC
     address: 0x1023
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: hour(s)
+    unit_of_measurement: "hour(s)"
     state_class: total_increasing
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: today_energy
     name: "${cat2} Today Energy"
     entity_category: DIAGNOSTIC
     address: 0x1027
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
+    device_class: energy
+    state_class: total_increasing
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
     
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: grid_total_active_power
     name: "${cat2} Grid total Active Power"
     entity_category: DIAGNOSTIC
     address: 0x1037
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: grid_total_reactive_power
     name: "${cat2} Grid total Reactive Power"
     entity_category: DIAGNOSTIC
     address: 0x1039
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: Var
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "Var"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv_today_peak_power
     name: "${cat2} PV Today Peak Power"
     entity_category: DIAGNOSTIC
     address: 0x103B
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: power_factor
     name: "${cat2} Power Factor"
     entity_category: DIAGNOSTIC
+    state_class: measurement
+    unit_of_measurement: ""
     address: 0x103D
     register_type: holding
     value_type: S_WORD
-    filters: [{ multiply: 0.1 }]
+    accuracy_decimals: 2
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pv_total_input_power
     name: "${cat2} PV Total Input Power"
     entity_category: DIAGNOSTIC
     address: 0x1048
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: decimals_of_total_energy
     name: "${cat2} Decimals of Total Energy"
     entity_category: DIAGNOSTIC
     address: 0x104C
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_watt_of_grid
     name: "${cat2} L1 watt of grid"
     entity_category: DIAGNOSTIC
     address: 0x1300
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
   
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_watt_of_grid
 #    name: "${cat2} L2 watt of grid"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1302
 #    register_type: holding
 #    value_type: S_DWORD
-#    unit_of_measurement: W
-#    filters: [{ multiply: 0.1 }]
+#    unit_of_measurement: "W"
+#    filters: 
+#      - multiply: 0.1 
   
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_watt_of_grid
 #    name: "${cat2} L3 watt of grid"
 #    entity_category: DIAGNOSTIC
 #    address: 0x1304
 #    register_type: holding
 #    value_type: S_DWORD
-#    unit_of_measurement: W
-#    filters: [{ multiply: 0.1 }]
+#    unit_of_measurement: "W"
+#    filters: 
+#      - multiply: 0.1 
   
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: accumulated_energy_of_positive
     name: "${cat2} Accumulated Energy Of Positie Import"
     entity_category: DIAGNOSTIC
     address: 0x1306
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: accumulated_energy_of_negatie
     name: "${cat2} Accumulated Energy Of Negative Export"
     entity_category: DIAGNOSTIC
     address: 0x1308
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_watt_of_load
     name: "${cat2} L1 watt of load"
     entity_category: DIAGNOSTIC
     address: 0x130A
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
   
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_watt_of_load
 #    name: "${cat2} L2 watt of load"
 #    entity_category: DIAGNOSTIC
@@ -1212,10 +1275,11 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: W
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_watt_of_load
 #    name: "${cat2} L3 watt of load"
 #    entity_category: DIAGNOSTIC
@@ -1223,32 +1287,35 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: W
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: accumulated_energy_of_load
     name: "${cat2} Accumulated Energy Of Load"
     entity_category: DIAGNOSTIC
     address: 0x1310
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_n_phase_voltage_of_grid
     name: "${cat2} L1-N phase voltage of grid"
     entity_category: DIAGNOSTIC
     address: 0x131A
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_n_phase_voltage_of_grid
 #    name: "${cat2} L2-N phase voltage of grid"
 #    entity_category: DIAGNOSTIC
@@ -1256,10 +1323,11 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: V
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_n_phase_voltage_of_grid
 #    name: "${cat2} L3-N phase voltage of grid"
 #    entity_category: DIAGNOSTIC
@@ -1267,21 +1335,23 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: V
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_current_of_grid
     name: "${cat2} L1 current of grid"
     entity_category: DIAGNOSTIC
     address: 0x131D
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: A
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "A"
+    filters: 
+      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_current_of_grid
 #    name: "${cat2} L2 current of grid"
 #    entity_category: DIAGNOSTIC
@@ -1289,10 +1359,11 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: A
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_current_of_grid
 #    name: "${cat2} L3 current of grid"
 #    entity_category: DIAGNOSTIC
@@ -1300,21 +1371,23 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: A
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_n_phase_voltage_of_load
     name: "${cat2} L1-N phase voltage of load"
     entity_category: DIAGNOSTIC
     address: 0x1323
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_n_phase_voltage_of_load
 #    name: "${cat2} L2-N phase voltage of load"
 #    entity_category: DIAGNOSTIC
@@ -1322,10 +1395,11 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: V
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_n_phase_voltage_of_load
 #    name: "${cat2} L3-N phase voltage of grloadid"
 #    entity_category: DIAGNOSTIC
@@ -1333,21 +1407,23 @@ sensor:
 #    register_type: holding
 #    value_type: U_WORD
 #    unit_of_measurement: V
-#    filters: [{ multiply: 0.1 }]
+#    filters: 
+#      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_current_of_load
     name: "${cat2} L1 current of load"
     entity_category: DIAGNOSTIC
     address: 0x1326
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: A
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "A"
+    filters: 
+      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l2_current_of_load
 #    name: "${cat2} L2 current of load"
 #    entity_category: DIAGNOSTIC
@@ -1355,10 +1431,11 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: A
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
 #  - platform: modbus_controller
-#    modbus_controller_id: fast
+#    modbus_controller_id: inverter_modbus
 #    id: l3_current_of_load
 #    name: "${cat2} L3 current of load"
 #    entity_category: DIAGNOSTIC
@@ -1366,101 +1443,110 @@ sensor:
 #    register_type: holding
 #    value_type: S_DWORD
 #    unit_of_measurement: A
-#    filters: [{ multiply: 0.01 }]
+#    filters: 
+#      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: today_import_energy
     name: "${cat2} Today import Energy"
     entity_category: DIAGNOSTIC
     address: 0x1332
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: today_export_energy
     name: "${cat2} Today export Energy"
     entity_category: DIAGNOSTIC
     address: 0x1334
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: today_load_energy
     name: "${cat2} Today load Energy"
     entity_category: DIAGNOSTIC
     address: 0x1336
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: frequency_of_grid
     name: "${cat2} Frequency of grid"
     entity_category: DIAGNOSTIC
     address: 0x1338
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: Hz
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "Hz"
+    filters: 
+      - multiply: 0.01 
   
 # =========================
 # ⚡ ENERGY - Backup
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_voltage_of_backup
     name: "${cat2} L1 voltage of Backup"
     entity_category: DIAGNOSTIC
     address: 0x1350
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_current_of_backup
     name: "${cat2} L1 current of Backup"
     entity_category: DIAGNOSTIC
     address: 0x1351
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: A
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "A"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_watt_of_backup
     name: "${cat2} L1 watt of Backup"
     entity_category: DIAGNOSTIC
     address: 0x1353
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: frequency_of_backup
     name: "${cat2} Frequency of Backup"
     entity_category: DIAGNOSTIC
     address: 0x1355
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: Hz
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "Hz"
+    filters: 
+      - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_voltage_of_backup
   #  name: "${cat2} L2 voltage of Beckup"
   #  entity_category: DIAGNOSTIC
@@ -1468,10 +1554,11 @@ sensor:
   #  register_type: holding
   #  value_type: U_WORD
   #  unit_of_measurement: V
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_current_of_backup
   #  name: "${cat2} L2 current of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1479,10 +1566,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: A
-  #  filters: [{ multiply: 0.01 }]
+  #  filters: 
+  #    - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_watt_of_backup
   #  name: "${cat2} L2 watt of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1490,10 +1578,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_voltage_of_backup
   #  name: "${cat2} L3 voltage of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1501,10 +1590,11 @@ sensor:
   #  register_type: holding
   #  value_type: U_WORD
   #  unit_of_measurement: V
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_current_of_backup
   #  name: "${cat2} L3 current of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1512,10 +1602,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: A
-  #  filters: [{ multiply: 0.01 }]
+  #  filters: 
+  #    - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_watt_of_backup
   #  name: "${cat2} L3 watt of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1523,69 +1614,75 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: today_energy_to_backup
     name: "${cat2} Today Energy of Backup"
     entity_category: DIAGNOSTIC
     address: 0x1360
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
     
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: accummulated_energy_to_backup
     name: "${cat2} Accumulated Energy to Backup"
     entity_category: DIAGNOSTIC
     address: 0x1362
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 } ]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
 # =========================
 # ⚡ ENERGY - Generator
 # =========================
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_voltage_of_generator
     name: "${cat2} L1 voltage of Generator"
     entity_category: DIAGNOSTIC
     address: 0x136A
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_current_of_generator
     name: "${cat2} L1 current of Generator"
     entity_category: DIAGNOSTIC
     address: 0x136B
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: A
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "A"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_watt_of_generator
     name: "${cat2} L1 watt of Generator"
     entity_category: DIAGNOSTIC
     address: 0x136D
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_voltage_of_generator
   #  name: "${cat2} L2 voltage of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1593,10 +1690,11 @@ sensor:
   #  register_type: holding
   #  value_type: U_WORD
   #  unit_of_measurement: V
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_current_of_generator
   #  name: "${cat2} L2 current of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1604,10 +1702,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: A
-  #  filters: [{ multiply: 0.01 }]
+  #  filters: 
+  #    - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_watt_of_generator
   #  name: "${cat2} L2 watt of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1615,10 +1714,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_voltage_of_generator
   #  name: "${cat2} L3 voltage of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1626,10 +1726,11 @@ sensor:
   #  register_type: holding
   #  value_type: U_WORD
   #  unit_of_measurement: V
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_current_of_generator
   #  name: "${cat2} L3 current of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1637,10 +1738,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: A
-  #  filters: [{ multiply: 0.01 }]
+  #  filters: 
+  #    - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_watt_of_generator
   #  name: "${cat2} L3 watt of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1648,59 +1750,64 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: frequency_of_generator
     name: "${cat2} Frequency of Generator"
     entity_category: DIAGNOSTIC
     address: 0x1379
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: Hz
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "Hz"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_today_energy
     name: "${cat2} Generator Today Energy"
     entity_category: DIAGNOSTIC
     address: 0x137A
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
     
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_total_energy
     name: "${cat2} Generator Total Energy"
     entity_category: DIAGNOSTIC
     address: 0x137C
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 } ]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
 # =========================
 # ⚡ ENERGY - Sums of energy
 # =========================
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: phase_l1_watt_of_grid_sum
     name: "${cat2} Phase L1 watt of grid sum"
     entity_category: DIAGNOSTIC
     address: 0x13A0
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l2_watt_of_grid_sum
   #  name: "${cat2} Phase L2 watt of grid sum"
   #  entity_category: DIAGNOSTIC
@@ -1708,10 +1815,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l3_watt_of_grid_sum
   #  name: "${cat2} Phase L3 watt of grid sum"
   #  entity_category: DIAGNOSTIC
@@ -1719,21 +1827,23 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: phase_l1_watt_of_load_sum
     name: "${cat2} Phase L1 watt of load sum"
     entity_category: DIAGNOSTIC
     address: 0x13A6
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l2_watt_of_load_sum
   #  name: "${cat2} Phase L2 watt of load sum"
   #  entity_category: DIAGNOSTIC
@@ -1741,10 +1851,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l3_watt_of_grid_sum
   #  name: "${cat2} Phase L3 watt of load sum"
   #  entity_category: DIAGNOSTIC
@@ -1752,54 +1863,59 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: daily_energy_of_load_sum
     name: "${cat2} Daily Energy of Load Sum"
     entity_category: DIAGNOSTIC
     address: 0x13AC
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: monthly_energy_of_load_sum
     name: "${cat2} Monthly Energy of Load Sum"
     entity_category: DIAGNOSTIC
     address: 0x13AE
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: accumulated_energy_of_load_sum
     name: "${cat2} Accumulated Energy of Load Sum"
     entity_category: DIAGNOSTIC
     address: 0x13B2
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: phase_l1_watt_sum_of_backup
     name: "${cat2} Phase L1 watt sum of Backup"
     entity_category: DIAGNOSTIC
     address: 0x13B4
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l2_watt_sum_of_backup
   #  name: "${cat2} Phase L2 watt sum of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1807,10 +1923,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l3_watt_sum_of_backup
   #  name: "${cat2} Phase L3 watt sum of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1818,21 +1935,23 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: phase_l1_apparent_power_sum_of_backup
     name: "${cat2} Phase L1 apparent power sum of Backup"
     entity_category: DIAGNOSTIC
     address: 0x13BA
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: VA
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "VA"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l2_apparent_power_sum_of_backup
   #  name: "${cat2} Phase L2 waapparent powertt sum of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1840,10 +1959,11 @@ sensor:
   #  register_type: holding
   #  value_type: U_DWORD
   #  unit_of_measurement: VA
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l3_apparent_power_sum_of_backup
   #  name: "${cat2} Phase L3 apparent power sum of Backup"
   #  entity_category: DIAGNOSTIC
@@ -1851,43 +1971,47 @@ sensor:
   #  register_type: holding
   #  value_type: U_DWORD
   #  unit_of_measurement: VA
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: daily_support_energy_sum_to_backup
     name: "${cat2} Daily Support Energy sum to Backup"
     entity_category: DIAGNOSTIC
     address: 0x13C0
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: accumulated_support_energy_sum_to_backup
     name: "${cat2} Accumulated Support Energy sum to Backup"
     entity_category: DIAGNOSTIC
     address: 0x13C2
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: phase_l1_watt_sum_of_generator
     name: "${cat2} Phase L1 watt sum of Generator"
     entity_category: DIAGNOSTIC
     address: 0x13C4
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l2_watt_sum_of_generator
   #  name: "${cat2} Phase L2 watt sum of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1895,10 +2019,11 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l3_watt_sum_of_generator
   #  name: "${cat2} Phase L3 watt sum of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1906,21 +2031,23 @@ sensor:
   #  register_type: holding
   #  value_type: S_DWORD
   #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: phase_l1_apparent_power_sum_of_generator
     name: "${cat2} Phase L1 apparent power sum of Generator"
     entity_category: DIAGNOSTIC
     address: 0x13CA
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: VA
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "VA"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l2_apparent_power_sum_of_generator
   #  name: "${cat2} Phase L2 waapparent powertt sum of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1928,10 +2055,11 @@ sensor:
   #  register_type: holding
   #  value_type: U_DWORD
   #  unit_of_measurement: VA
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: phase_l3_apparent_power_sum_of_generator
   #  name: "${cat2} Phase L3 apparent power sum of Generator"
   #  entity_category: DIAGNOSTIC
@@ -1939,265 +2067,284 @@ sensor:
   #  register_type: holding
   #  value_type: U_DWORD
   #  unit_of_measurement: VA
-  #  filters: [{ multiply: 0.1 }]
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_today_energy_sum
     name: "${cat2} Generator Today Energy sum"
     entity_category: DIAGNOSTIC
     address: 0x13D0
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_total_energy_sum
     name: "${cat2} Generator Total Energy sum"
     entity_category: DIAGNOSTIC
     address: 0x13D2
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pvi_daily_generating_energy_sum
     name: "${cat2} PVI Daily Generating Energy sum"
     entity_category: DIAGNOSTIC
     address: 0x13D8
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
+    unit_of_measurement: "kWh"
     
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: pvi_accumulated_energy_sum
     name: "${cat2} PVI accumulated Energy sum"
     entity_category: DIAGNOSTIC
     address: 0x13DA
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
+    unit_of_measurement: "kWh"
    
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: totally_input_dc_watt_sum
     name: "${cat2} Totally Input DC watt sum"
     entity_category: DIAGNOSTIC
     address: 0x13DC
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_power_sum
     name: "${cat2} Battery Power sum"
     entity_category: DIAGNOSTIC
     address: 0x13DE
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_daily_charge_energy
     name: "${cat2} Battery Daily Charge Energy"
     entity_category: DIAGNOSTIC
     address: 0x13E0
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_accumulated_charge_energy
     name: "${cat2} Battery Accumulated Charge Energy"
     entity_category: DIAGNOSTIC
     address: 0x13E2
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_daily_discharge_energy
     name: "${cat2} Battery Daily DisCharge Energy"
     entity_category: DIAGNOSTIC
     address: 0x13E4
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_accumulated_discharge_energy
     name: "${cat2} Battery Accumulated DisCharge Energy"
     entity_category: DIAGNOSTIC
     address: 0x13E6
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "kWh"
+    filters: 
+      - multiply: 0.01 
 
 # =========================
 # ⚡ ENERGY - AC Couple
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_phase_voltage_of_ac_couple
     name: "${cat3} L1 phase voltage of AC Couple"
     entity_category: DIAGNOSTIC
     address: 0x1500
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_phase_current_of_ac_couple
     name: "${cat3} L1 current of AC Couple"
     entity_category: DIAGNOSTIC
     address: 0x1501
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: A
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "A"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: l1_phase_power_of_ac_couple
     name: "${cat3} L1 power of AC Couple"
     entity_category: DIAGNOSTIC
     address: 0x1503
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_phase_voltage_of_ac_couple
   #  name: "${cat3} L2 phase voltage of AC Couple"
   #  entity_category: DIAGNOSTIC
   #  address: 0x1505
   #  register_type: holding
   #  value_type: U_WORD
-  #  unit_of_measurement: V
-  #  filters: [{ multiply: 0.1 }]
+  #  unit_of_measurement: "V"
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_phase_current_of_ac_couple
-  #  name: "${cat3 L2 current of AC Couple"
+  #  name: "${cat3} L2 current of AC Couple"
   #  entity_category: DIAGNOSTIC
   #  address: 0x1506
   #  register_type: holding
   #  value_type: S_DWORD
-  #  unit_of_measurement: A
-  #  filters: [{ multiply: 0.01 }]
+  #  unit_of_measurement: "A"
+  #  filters: 
+  #    - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l2_phase_power_of_ac_couple
   #  name: "${cat3} L2 power of AC Couple"
   #  entity_category: DIAGNOSTIC
   #  address: 0x1508
   #  register_type: holding
   #  value_type: S_DWORD
-  #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  unit_of_measurement: "W"
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_phase_voltage_of_ac_couple
   #  name: "${cat3} L3 phase voltage of AC Couple"
   #  entity_category: DIAGNOSTIC
   #  address: 0x150A
   #  register_type: holding
   #  value_type: U_WORD
-  #  unit_of_measurement: V
-  #  filters: [{ multiply: 0.1 }]
+  #  unit_of_measurement: "V"
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_phase_current_of_ac_couple
-  #  name: "${cat3 L3 current of AC Couple"
+  #  name: "${cat3} L3 current of AC Couple"
   #  entity_category: DIAGNOSTIC
   #  address: 0x150B
   #  register_type: holding
   #  value_type: S_DWORD
-  #  unit_of_measurement: A
-  #  filters: [{ multiply: 0.01 }]
+  #  unit_of_measurement: "A"
+  #  filters: 
+  #    - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: l3_phase_power_of_ac_couple
   #  name: "${cat3} L3 power of AC Couple"
   #  entity_category: DIAGNOSTIC
   #  address: 0x150D
   #  register_type: holding
   #  value_type: S_DWORD
-  #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  unit_of_measurement: "W"
+  #  filters: 
+  #    - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: frequency_of_ac_couple
     name: "${cat2} Frequency of AC Couple"
     entity_category: DIAGNOSTIC
     address: 0x150F
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: Hz
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "Hz"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: energy_today_of_ac_couple
     name: "${cat2} Energy Today of AC Couple"
     entity_category: DIAGNOSTIC
     address: 0x1510
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
+    unit_of_measurement: "kWh"
         
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: energy_total_of_ac_couple
     name: "${cat2} Energy Total of AC Couple"
     entity_category: DIAGNOSTIC
     address: 0x1512
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: kWh
+    unit_of_measurement: "kWh"
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: energy_today_of_ac_couple_hp
     name: "${cat2} Energy Today of AC Couple (HP)"
     entity_category: DIAGNOSTIC
     address: 0x1514
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
+    unit_of_measurement: "Wh"
      
 
 # =========================
 # 🔋 BATTERY
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_soc
     name: "${cat2} Battery 1 SOC"
     entity_category: DIAGNOSTIC
@@ -2207,7 +2354,7 @@ sensor:
     unit_of_measurement: "%"
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_temperature
     name: "${cat2} Battery 1 Temperature"
     entity_category: DIAGNOSTIC
@@ -2217,84 +2364,91 @@ sensor:
     unit_of_measurement: "°C"
    
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_voltage
     name: "${cat2} Battery 1 Voltage"
     entity_category: DIAGNOSTIC
     address: 0x2006
     register_type: holding
     value_type: U_WORD
-    unit_of_measurement: V
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "V"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_current
     name: "${cat2} Battery 1 Current"
     entity_category: DIAGNOSTIC
     address: 0x2007
     register_type: holding
     value_type: S_DWORD
-    unit_of_measurement: A
-    filters: [{ multiply: 0.01 }]
+    unit_of_measurement: "A"
+    filters: 
+      - multiply: 0.01 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_power
     name: "${cat2} Battery 1 Power"
     entity_category: DIAGNOSTIC
     address: 0x2009
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: W
-    filters: [{ multiply: 0.1 }]
+    unit_of_measurement: "W"
+    filters: 
+      - multiply: 0.1 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_today_charge_energy
-    name: "${cat2} Battery 1Today Charge Energy"
+    name: "${cat2} Battery 1 Today Charge Energy"
     entity_category: DIAGNOSTIC
     address: 0x200B
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_accumulated_charge_energy
     name: "${cat2} Battery 1 Accumulated Charge Energy"
     entity_category: DIAGNOSTIC
     address: 0x200D
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_today_discharge_energy
     name: "${cat2} Battery 1 Today Discharge Energy"
     entity_category: DIAGNOSTIC
     address: 0x200F
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_accumulated_discharge_energy
     name: "${cat2} Battery 1 Accumulated Discharge Energy"
     entity_category: DIAGNOSTIC
     address: 0x2011
     register_type: holding
     value_type: U_DWORD
-    unit_of_measurement: Wh
-    filters: [{ multiply: 10 }]
+    unit_of_measurement: "Wh"
+    filters: 
+      - multiply: 10
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_1_average_cell_temperature
     name: "${cat2} Battery 1 Average Cell Temperature"
     entity_category: DIAGNOSTIC
@@ -2304,7 +2458,7 @@ sensor:
     unit_of_measurement: "°C"
     
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_aoc
   #  name: "${cat2} Battery 2 SOC"
   #  entity_category: DIAGNOSTIC
@@ -2314,7 +2468,7 @@ sensor:
   #  unit_of_measurement: "%"
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_temperature
   #  name: "${cat2} Battery 2 Temperature"
   #  entity_category: DIAGNOSTIC
@@ -2324,84 +2478,91 @@ sensor:
   #  unit_of_measurement: "°C"
    
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_voltage
   #  name: "${cat2} Battery 2 Voltage"
   #  entity_category: DIAGNOSTIC
   #  address: 0x2206
   #  register_type: holding
   #  value_type: U_WORD
-  #  unit_of_measurement: V
-  #  filters: [{ multiply: 0.1 }]
+  #  unit_of_measurement: "V"
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_current
   #  name: "${cat2} Battery 2 Current"
   #  entity_category: DIAGNOSTIC
   #  address: 0x2207
   #  register_type: holding
   #  value_type: S_DWORD
-  #  unit_of_measurement: A
-  #  filters: [{ multiply: 0.01 }]
+  #  unit_of_measurement: "A"
+  #  filters: 
+  #    - multiply: 0.01 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_power
   #  name: "${cat2} Battery 2 Power"
   #  entity_category: DIAGNOSTIC
   #  address: 0x2209
   #  register_type: holding
   #  value_type: U_DWORD
-  #  unit_of_measurement: W
-  #  filters: [{ multiply: 0.1 }]
+  #  unit_of_measurement: "W"
+  #  filters: 
+  #    - multiply: 0.1 
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_today_charge_energy
   #  name: "${cat2} Battery 2 Today Charge Energy"
   #  entity_category: DIAGNOSTIC
   #  address: 0x220B
   #  register_type: holding
   #  value_type: U_DWORD
-  #  unit_of_measurement: Wh
-  #  filters: [{ multiply: 10 }]
+  #  unit_of_measurement: "Wh"
+  #  filters: 
+  #    - multiply: 10
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_accumulated_charge_energy
   #  name: "${cat2} Battery 2 Accumulated Charge Energy"
   #  entity_category: DIAGNOSTIC
   #  address: 0x220D
   #  register_type: holding
   #  value_type: U_DWORD
-  #  unit_of_measurement: Wh
-  #  filters: [{ multiply: 10 }]
+  #  unit_of_measurement: "Wh"
+  #  filters: 
+  #    - multiply: 10
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_today_discharge_energy
   #  name: "${cat2} Battery 2 Today Discharge Energy"
   #  entity_category: DIAGNOSTIC
   #  address: 0x220F
   #  register_type: holding
   #  value_type: U_DWORD
-  #  unit_of_measurement: Wh
-  #  filters: [{ multiply: 10 }]
+  #  unit_of_measurement: "Wh"
+  #  filters: 
+  #    - multiply: 10
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_accumulated_discharge_energy
   #  name: "${cat2} Battery 2 Accumulated Discharge Energy"
   #  entity_category: DIAGNOSTIC
   #  address: 0x2211
   #  register_type: holding
   #  value_type: U_DWORD
-  #  unit_of_measurement: Wh
-  #  filters: [{ multiply: 10 }]
+  #  unit_of_measurement: "Wh"
+  #  filters: 
+  #    - multiply: 10
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_2_average_cell_temperature
   #  name: "${cat2} Battery 2 Average Cell Temperature"
   #  entity_category: DIAGNOSTIC
@@ -2415,7 +2576,7 @@ text_sensor:
 # 🌡 SYSTEM
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: system_work_status
     name: "${cat2} System Work Status"
     entity_category: DIAGNOSTIC
@@ -2523,7 +2684,7 @@ text_sensor:
       return values;
 
   #- platform: modbus_controller   #ok - commented out as there is no need for it unless inverter is not configured
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: device_model
   #  name: "${cat1} Device Model"
   #  entity_category: DIAGNOSTIC
@@ -2544,7 +2705,7 @@ text_sensor:
   #    return newString;
 
   #- platform: modbus_controller   #ok - commented out as there is no need for it unless inverter is not configured
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: device_model_extended
   #  name: "${cat1} Device Model Extended"
   #  entity_category: DIAGNOSTIC
@@ -2575,7 +2736,7 @@ text_sensor:
   #  update_interval: 60s
     
   #- platform: modbus_controller   #ok - commented out as there is no need for it unless inverter is not configured
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: device_serial_number
   #  name: "${cat1} Device Serial Number"
   #  entity_category: DIAGNOSTIC
@@ -2596,7 +2757,7 @@ text_sensor:
   #    return newString;
 
   #- platform: modbus_controller   #ok - commented out as there is no need for it unless inverter is not configured
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: device_serial_number_extended
   #  name: "${cat1} Device Serial Number Extended"
   #  entity_category: DIAGNOSTIC
@@ -2627,7 +2788,7 @@ text_sensor:
   #  update_interval: 60s
   
   #- platform: modbus_controller   #ok but not documented in file for JSDSolar
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: modbus_protocol_version
   #  name: "${cat1} Modbus Protocol Version"
   #  entity_category: DIAGNOSTIC
@@ -2642,7 +2803,7 @@ text_sensor:
   #    return res;
 
   #- platform: modbus_controller  #ok - commented out as there is no need for it unless inverter is not configured 
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: master_firmware_version
   #  name: "${cat1} Master Firmware Version"
   #  entity_category: DIAGNOSTIC
@@ -2663,7 +2824,7 @@ text_sensor:
   #    return newString;    
   
   #- platform: modbus_controller  ##ok but not documented in file for JSDSolar
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: master_firmware_build_date
   #  name: "${cat1} Master Firmware Build Date"
   #  entity_category: DIAGNOSTIC
@@ -2685,7 +2846,7 @@ text_sensor:
   #    return newString;    
   
   #- platform: modbus_controller  ##ok
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: slave_firmware_version
   #  name: "${cat1} Slave Firmware Version"
   #  entity_category: DIAGNOSTIC
@@ -2706,7 +2867,7 @@ text_sensor:
   #    return newString;    
   
   #- platform: modbus_controller  ##ok but not documented in file for JSDSolar
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: slave_firmware_build_date
   #  name: "${cat1} Slave Firmware Build Date"
   #  entity_category: DIAGNOSTIC
@@ -2728,7 +2889,7 @@ text_sensor:
   #    return newString;    
   
   - platform: modbus_controller  ##ok
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: grid_phase_number
     name: "${cat1} Grid Phase Number"
     entity_category: DIAGNOSTIC
@@ -2750,7 +2911,7 @@ text_sensor:
       }
 
   - platform: modbus_controller  ##ok
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: production_type
     name: "${cat1} Production Type"
     entity_category: DIAGNOSTIC
@@ -2775,7 +2936,7 @@ text_sensor:
       }
 
   #- platform: modbus_controller  #ok but commented out as this is not valuable information from control point of view
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: ems_firmware_version
   #  name: "${cat1} EMS Firmware Version"
   #  entity_category: DIAGNOSTIC
@@ -2796,7 +2957,7 @@ text_sensor:
   #    return newString;    
 
   #- platform: modbus_controller  ## does not work - cant read this adress -maybe as this is 4.19 vs 4.21 protocol version
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: ems_firmware_build_date
   #  name: "${cat1} EMS Firmware Build Date"
   #  entity_category: DIAGNOSTIC
@@ -2821,7 +2982,7 @@ text_sensor:
   #    return newString;    
 
   #- platform: modbus_controller  ## does not work - cant read this adress -maybe as this is 4.19 vs 4.21 protocol version
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: dcdc_firmware_version
   #  name: "${cat1} DCDC Firmware Version"
   #  entity_category: DIAGNOSTIC
@@ -2842,7 +3003,7 @@ text_sensor:
   #    return newString;    
   
   #- platform: modbus_controller  ## does not work - cant read this adress -maybe as this is 4.19 vs 4.21 protocol version
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  name: "${cat1} DCDC Firmware Build Date"
   #  entity_category: DIAGNOSTIC
   #  address: 0x1A76
@@ -2864,7 +3025,7 @@ text_sensor:
   #    return newString;    
   
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: inverter_mode
     name: "${cat2} Inverter Mode"
     entity_category: DIAGNOSTIC
@@ -2884,7 +3045,7 @@ text_sensor:
       }
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_start_time
     name: "${cat3} T Generator Start Time"
     entity_category: DIAGNOSTIC
@@ -2899,7 +3060,7 @@ text_sensor:
     internal: true       
   
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_end_time
     name: "${cat3} T Generator End Time"
     entity_category: DIAGNOSTIC
@@ -2914,7 +3075,7 @@ text_sensor:
     internal: true      
 
   #- platform: modbus_controller   #ok - commented out as there is no need for it unless inverter is not configured
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: wifi_sta_ssid
   #  name: "${cat4} WIFI STA SSID"
   #  entity_category: DIAGNOSTIC
@@ -2935,7 +3096,7 @@ text_sensor:
   #    return newString;
 
   #- platform: modbus_controller   #ok - commented out as there is no need for it unless inverter is not configured
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: wifi_sta_password
   #  name: "${cat4} WIFI STA Password"
   #  entity_category: DIAGNOSTIC
@@ -2959,7 +3120,7 @@ text_sensor:
 # 🚨 ERRORS
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: error_code_1
     name: "${cat2} Error Code 1"
     entity_category: DIAGNOSTIC
@@ -3003,7 +3164,7 @@ text_sensor:
       return values;
   
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: error_code_2
     name: "${cat2} Error Code 2"
     entity_category: DIAGNOSTIC
@@ -3047,7 +3208,7 @@ text_sensor:
       return values;
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: error_code_3
     name: "${cat2} Error Code 3"
     entity_category: DIAGNOSTIC
@@ -3091,7 +3252,7 @@ text_sensor:
       return values;
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: fuse_open_indicator
     name: "${cat2} Fuse Open Indicator"
     entity_category: DIAGNOSTIC
@@ -3118,7 +3279,7 @@ text_sensor:
 
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: error_code_4
     name: "${cat2} Error Code 4"
     entity_category: DIAGNOSTIC
@@ -3163,7 +3324,7 @@ text_sensor:
       return values;
 
   #- platform: modbus_controller
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: error_code_5
   #  name: "${cat2} Error Code 5"
   #  entity_category: DIAGNOSTIC
@@ -3208,7 +3369,7 @@ text_sensor:
   #    return values;
 
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: dry_contact_status
     name: "${cat4} Dry Contact Status"
     entity_category: DIAGNOSTIC
@@ -3280,7 +3441,7 @@ text_sensor:
 #  Time based control
 # =========================
   - platform: modbus_controller
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: time_based_control_structure
     name: "${cat4} T Time Based Control Structure"
     entity_category: DIAGNOSTIC
@@ -3337,7 +3498,7 @@ select:
 #  Inverter params
 # =========================
   - platform: modbus_controller   #ok inverter settings -> QuickSettings(3) -> Work Mode                                 
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: work_mode
     name: "${cat3} Work Mode"
     entity_category: config
@@ -3352,7 +3513,7 @@ select:
       #"Battery discharge mode": 4
   
   - platform: modbus_controller    #ok inverter settings -> QuickSettings(4) -> Brand                               
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_barand
     name: "${cat3} Battery Brand"
     entity_category: config
@@ -3375,7 +3536,7 @@ select:
       #"Dyness-HV": 133 
         
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: bms_comm_address
     name: "${cat3} BMS Comm Address"
     entity_category: config
@@ -3403,7 +3564,7 @@ select:
 
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_capacity_ah
     name: "${cat3} Battery capacity Ah"
     entity_category: config
@@ -3419,7 +3580,7 @@ select:
   
     
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: rated_output_voltage
     name: "${cat3} Rated output voltage"
     entity_category: config
@@ -3433,7 +3594,7 @@ select:
       "240 V": 2400
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: rated_output_frequency
     name: "${cat3} Rated  output frequency"
     entity_category: config
@@ -3445,7 +3606,7 @@ select:
       "60 Hz": 6000
 
   - platform: modbus_controller                                  
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: gen_port_mode
     name: "${cat3} GEN port Mode"
     entity_category: config
@@ -3459,7 +3620,7 @@ select:
       "Inverter Input": 3    
       
   - platform: modbus_controller      #ok inverter settings -> QuickSettings(4) -> Capacity Management Mode                            
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: capacity_management_mode
     name: "${cat3} Capacity Management Mode"
     entity_category: config
@@ -3471,7 +3632,7 @@ select:
       "Battery Voltage": 1
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: parallel_system_battery_connect_type
     name: "${cat3} Parallel System Battery Connect Type"
     entity_category: config
@@ -3483,7 +3644,7 @@ select:
       "Battery Connect Independence": 1
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_run_cycle
     name: "${cat3} Generator Run Cycle"
     entity_category: config
@@ -3496,7 +3657,7 @@ select:
       "Monthly Cycle": 2
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_run_day
     name: "${cat3} Generator Run Day"
     entity_category: config
@@ -3513,7 +3674,7 @@ select:
       "Sunday": 7
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generatror_dry_force_on_off
     name: "${cat3} Generator DRY force ONOFF"
     entity_category: config
@@ -3526,7 +3687,7 @@ select:
       "Off": 2
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: rs485_device_hybrid
     name: "${cat3} RS485 device (Hybrid)"
     entity_category: config
@@ -3547,7 +3708,7 @@ select:
       "Eastron/SEM3_WL-Modbus": 0x000A
 
   #- platform: modbus_controller #provided in jsdsolar specification but not available in inverter                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_connection_type
   #  name: "${cat3} Battery Connection Type"
   #  entity_category: config
@@ -3562,7 +3723,7 @@ select:
   #    "Single Battery (BAT1+BAT2)": 0x0004
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: bms_communication_error_behaviour
     name: "${cat3} BMS COmmunication error behaviour"
     entity_category: config
@@ -3574,7 +3735,7 @@ select:
       "Inverter keep running (limit charging current and voltage)": 0x0001
                   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: dry_contact_function
     name: "${cat4} Dry Contact Function"
     entity_category: config
@@ -3590,7 +3751,7 @@ select:
       "Time mode": 5
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: inverter_modbus_address
     name: "${cat4} Inverter Modbus Address"
     entity_category: config
@@ -3605,7 +3766,7 @@ select:
       "4": 4
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: rs485_baud_rate
     name: "${cat4} RS485 Baud Rate"
     entity_category: config
@@ -3620,7 +3781,7 @@ select:
       "19200": 5
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: digital_meter_modbus_address
     name: "${cat4} Digital Meter Modbus Address"
     entity_category: config
@@ -3635,7 +3796,7 @@ select:
       "4": 4
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: digital_meter_type
     name: "${cat4} Digital Meter Type"
     entity_category: config
@@ -3654,7 +3815,7 @@ select:
       "CHINT/DDSU666": 8
   
   - platform: modbus_controller        #ok inverter settings -> QuickSettings(3) -> Power Flow Direction                           
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: power_flow_direction
     name: "${cat4} Power Flow Direction"
     entity_category: config
@@ -3668,7 +3829,7 @@ select:
       "From Inverter to Grid": 1
 
   - platform: modbus_controller         #ok inverter settings -> QuickSettings(3) -> Power Control                        
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: power_control
     name: "${cat4} Power Control"
     entity_category: config
@@ -3682,7 +3843,7 @@ select:
       "Power limit by digital meter device": 3
       
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: power_limit_ct_ration
     name: "${cat4} Power limit CT ratio"
     entity_category: config
@@ -3701,7 +3862,7 @@ select:
       "10000:1": 8
 
   - platform: modbus_controller       #ok inverter settings -> QuickSettings(3) ->  Meter Location                             
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: meter_location
     name: "${cat4} Meter Location"
     entity_category: config
@@ -3717,7 +3878,7 @@ select:
 
 
   - platform: modbus_controller       #ok inverter settings -> QuickSettings(2) -> Standard Code                          
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: standard_code
     name: "${cat4} Standard Code"
     entity_category: config
@@ -3838,7 +3999,7 @@ number:
 #  Iinverter params control
 # =========================
   - platform: modbus_controller     #ok inverter settings -> QuickSettings(2) -> Discharge Stop Voltage (V)   - this is used only if capacity management mode is set to "Voltage"                            
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: discharge_stop_voltage
     name: "${cat3} Discharge Stop Voltage"
     entity_category: config
@@ -3855,7 +4016,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: stop_charge_voltage
     name: "${cat3} Stop charge voltage"
     entity_category: config
@@ -3872,7 +4033,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller    #ok inverter settings -> QuickSettings(2) -> Max Grid Charge Power (W)                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: max_grid_charger_power
     name: "${cat3} Max Grid Charger Power"
     entity_category: config
@@ -3884,7 +4045,7 @@ number:
     unit_of_measurement: "W"
 
   - platform: modbus_controller    #ok inverter settings -> Grid Charge stop Battery SOC (%)   or   settings -> QuickSettings(2) ->  Grid Charge stop Battery SOC (%)                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: grid_charge_stop_battery_soc
     name: "${cat3} Grid Charge Stop Battery SOC"
     entity_category: config
@@ -3896,7 +4057,7 @@ number:
     unit_of_measurement: "%"
 
   - platform: modbus_controller    #this is setup for max as 3000W but can be up to max of inverter specs that is 6000W                               
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_charger_power
     name: "${cat3} Maximum charger power"
     entity_category: config
@@ -3908,7 +4069,7 @@ number:
     unit_of_measurement: "W"
   
   - platform: modbus_controller                               
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_capacity_of_charger_end
     name: "${cat3} Battery capacity of charger end"
     entity_category: config
@@ -3920,7 +4081,7 @@ number:
     unit_of_measurement: "%"
 
   - platform: modbus_controller    #this is setup for max as 3000W but can be up to max of battery discharge power and right cables between inverter and battery                             
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_discharger_power
     name: "${cat3} Maximum discharger power"
     entity_category: config
@@ -3932,7 +4093,7 @@ number:
     unit_of_measurement: "W"
   
   - platform: modbus_controller     #ok inverter settings -> QuickSettings(4) -> Discharge Stop SOC (%)     - this is used only if capacity management mode is set to "SOC"                      
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_discharge_stop_soc
     name: "${cat3} Battery Discharge Stop SOC (%)"
     entity_category: config
@@ -3944,7 +4105,7 @@ number:
     unit_of_measurement: "%"
 
   - platform: modbus_controller                               
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: off_grid_start_up_battery_capacity
     name: "${cat3} Off-grid start-up battery capacity"
     entity_category: config
@@ -3956,7 +4117,7 @@ number:
     unit_of_measurement: "%"
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_discharge_current
     name: "${cat3} Maximum discharge current"
     entity_category: config
@@ -3973,7 +4134,7 @@ number:
       return x * 100.0f;
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_charge_current
     name: "${cat3} Maximum charge current"
     entity_category: config
@@ -3990,7 +4151,7 @@ number:
       return x * 100.0f;
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_input_power_from_grid
     name: "${cat3} Maximum Input Power from Grid"
     entity_category: config
@@ -4004,7 +4165,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_gen_charge_power
     name: "${cat3} Maximum GEN Charge Power"
     entity_category: config
@@ -4018,7 +4179,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_input_power_from_generator
     name: "${cat3} Maximum Input Power from Generator"
     entity_category: config
@@ -4032,7 +4193,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_start_soc
     name: "${cat3} Generator Start SOC"
     entity_category: config
@@ -4046,7 +4207,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_end_soc
     name: "${cat3} Generator End SOC"
     entity_category: config
@@ -4060,7 +4221,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: minimum_pv_power_of_smart_load_on
     name: "${cat3} Minimum PV Power of Smart Load On"
     entity_category: config
@@ -4074,7 +4235,7 @@ number:
     icon: mdi:cog
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_soc_of_smart_load_on
     name: "${cat3} Battery SOC of Smart Load On"
     entity_category: config
@@ -4088,7 +4249,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_soc_of_smart_load_off
     name: "${cat3} Battery SOC of Smart Load Off"
     entity_category: config
@@ -4102,7 +4263,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: off_grid_start_up_battery_voltage
     name: "${cat3} Off-grid Start-up battery Voltage"
     entity_category: config
@@ -4119,7 +4280,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_voltage_of_smart_load_on
     name: "${cat3} Battery Voltage of Smart Load On"
     entity_category: config
@@ -4136,7 +4297,7 @@ number:
       return x * 10.0f;
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_voltage_of_smart_load_off
     name: "${cat3} Battery Voltage of Smart Load Off"
     entity_category: config
@@ -4153,7 +4314,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: backup_minimum_output_voltage
     name: "${cat3} Backup Minimum Output Voltage"
     entity_category: config
@@ -4170,7 +4331,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: backup_maximum_output_voltage
     name: "${cat3} Backup Maximum Output Voltage"
     entity_category: config
@@ -4187,7 +4348,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_start_battery_voltage
     name: "${cat3} Generator Start Battery Voltage"
     entity_category: config
@@ -4204,7 +4365,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_end_battery_voltage
     name: "${cat3} Generator End Battery Voltage"
     entity_category: config
@@ -4221,7 +4382,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_max_runtime
     name: "${cat3} Generator Max Runtime"
     entity_category: config
@@ -4235,7 +4396,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_down_time
     name: "${cat3} Generator Down Time"
     entity_category: config
@@ -4249,7 +4410,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_soc_of_inverter_on
     name: "${cat3} Battery SOC of Inverter On"
     entity_category: config
@@ -4263,7 +4424,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_soc_of_inverter_off
     name: "${cat3} Battery SOC of Inverter Off"
     entity_category: config
@@ -4277,7 +4438,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_voltage_of_inverter_on
     name: "${cat3} Battery Voltage of Inverter On"
     entity_category: config
@@ -4294,7 +4455,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_voltage_of_inverter_off
     name: "${cat3} Battery Voltage of Inverter Off"
     entity_category: config
@@ -4311,7 +4472,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: ac_couple_frequency_high
     name: "${cat3} AC Couple frequency high"
     entity_category: config
@@ -4328,7 +4489,7 @@ number:
       return x * 100.0f;
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: force_charge_start_soc
     name: "${cat3} Force Charge Start SOC"
     entity_category: config
@@ -4342,7 +4503,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: force_charge_end_soc
     name: "${cat3} Force Charge End SOC"
     entity_category: config
@@ -4356,7 +4517,7 @@ number:
     icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: force_charge_start_voltage
     name: "${cat3} Force Charge Start Voltage"
     entity_category: config
@@ -4373,7 +4534,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: force_charge_end_voltage
     name: "${cat3} Force Charge End Voltage"
     entity_category: config
@@ -4390,7 +4551,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: battery_voltage_of_grif_charge_end
     name: "${cat3} Battery Voltage Of Grid Charge End"
     entity_category: config
@@ -4407,7 +4568,7 @@ number:
       return x * 10.0f;
 
   - platform: modbus_controller     #ok inverter settings -> backup reserve (%)                              
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: backup_reserve_capacity_of_discharge_end_on_grid
     name: "${cat3} Backup Reserve Capacity of Discharge End (On-Grid)"
     entity_category: config
@@ -4419,7 +4580,7 @@ number:
     unit_of_measurement: "%"
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: voltage_of_discharge_end_on_grid
     name: "${cat3} Voltage of Discharge End (On-Grid)"
     entity_category: config
@@ -4436,7 +4597,7 @@ number:
       return x * 10.0f;
     
   - platform: modbus_controller                     
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_grid_forced_charge_power
     name: "${cat3} Maximum Grid Forced Charge Power"
     entity_category: config
@@ -4448,7 +4609,7 @@ number:
     unit_of_measurement: "W"
   
   - platform: modbus_controller                     
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: generator_run_date
     name: "${cat3} Generator Run Date"
     entity_category: config
@@ -4460,7 +4621,7 @@ number:
     unit_of_measurement: "d-of-m"
 
   #- platform: modbus_controller #available in jsdsolar file but not on inverter                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_charge_efficiency
   #  name: "${cat3} Battery Charge Efficiency"
   #  entity_category: config
@@ -4474,7 +4635,7 @@ number:
   #  icon: mdi:cog
 
   #- platform: modbus_controller                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_rate_temperature
   #  name: "${cat3} Battery Rate Temperature"
   #  entity_category: config
@@ -4488,7 +4649,7 @@ number:
   #  icon: mdi:cog
 
   #- platform: modbus_controller                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: temperature_compensated_battery_capacity
   #  name: "${cat3} Temperature Compensated Battery Capacity"
   #  entity_category: config
@@ -4505,7 +4666,7 @@ number:
   #    return x * 10.0f;
 
   #- platform: modbus_controller                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_charging_ah_per_hour
   #  name: "${cat3} Battery Charging AH per hour"
   #  entity_category: config
@@ -4522,7 +4683,7 @@ number:
   #    return x * 10.0f;
 
   #- platform: modbus_controller                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: battery_discharging_ah_per_hour
   #  name: "${cat3} Battery DisCharging AH per hour"
   #  entity_category: config
@@ -4539,7 +4700,7 @@ number:
   #    return x * 10.0f;
 
   #- platform: modbus_controller                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: accumulated_charging_ah
   #  name: "${cat3} Accumulated Charging AH"
   #  entity_category: config
@@ -4556,7 +4717,7 @@ number:
   #    return x * 10.0f;
   
   #- platform: modbus_controller                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: accumulated_discharging_ah
   #  name: "${cat3} Accumulated DisCharging AH"
   #  entity_category: config
@@ -4573,7 +4734,7 @@ number:
   #    return x * 10.0f;
   
   #- platform: modbus_controller                                   
-  #  modbus_controller_id: fast
+  #  modbus_controller_id: inverter_modbus
   #  id: temperature_compensated_battery_voltage
   #  name: "${cat3} Temperature Compensated Battery voltage"
   #  entity_category: config
@@ -4587,7 +4748,7 @@ number:
   #  icon: mdi:cog
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: maximum_feed_in_grid_power
     name: "${cat4} Maximum feed in grid power"
     entity_category: config
@@ -4599,7 +4760,7 @@ number:
     unit_of_measurement: "W"
 
   - platform: modbus_controller     #ok inverter settings -> QuickSettings(3) -> Max Grid Feed-In Power (W)                                
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: max_grid_feed_in_power
     name: "${cat4} Max Grid Feed-in Power"
     entity_category: config
@@ -4653,7 +4814,7 @@ switch:
 #  Inverter params
 # ========================= 
   - platform: modbus_controller   #ok inverter on/off remote button
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     name: "${cat4} Inverter Power"
     address: 0x6001
     register_type: holding
@@ -4664,7 +4825,7 @@ switch:
       return !x;
 
   - platform: modbus_controller   #ok inverter settings -> Charge From Grid       or      settings -> QuickSettings(2) -> Charge From Grid                          
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: charge_from_grid
     name: "${cat3} Charge from Grid"
     entity_category: config
@@ -4673,7 +4834,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: off_grid_mode
     name: "${cat3} Off-grid mode"
     entity_category: config
@@ -4682,7 +4843,7 @@ switch:
     bitmask: 0x0001
   
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: lithium_battery_activation_function
     name: "${cat3} Lithium Battery Activation Function"
     entity_category: config
@@ -4691,7 +4852,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: connect_gen_to_grid_port_function
     name: "${cat3} Connect GEN to Grid Port Function"
     entity_category: config
@@ -4700,7 +4861,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: always_on_with_grid_function
     name: "${cat3} Always On with Grid Function"
     entity_category: config
@@ -4709,7 +4870,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: support_normal_load_function
     name: "${cat3} Support Normal Load Function"
     entity_category: config
@@ -4718,7 +4879,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: parallel_mode_function
     name: "${cat3} Parallel Mode Function"
     entity_category: config
@@ -4727,7 +4888,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: feed_in_grid_fucntion
     name: "${cat3} Feed In Grid Function"
     entity_category: config
@@ -4736,7 +4897,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller   #ok inverter settings -> Time Based Control                                  
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: time_based_control
     name: "${cat3} Time Based Control"
     entity_category: config
@@ -4745,7 +4906,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller                                   
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: ac_coupling_function
     name: "${cat3} AC Coupling function"
     entity_category: config
@@ -4754,7 +4915,7 @@ switch:
     bitmask: 0x0001
 
   - platform: modbus_controller    #ok inverter settings -> QuickSettings(6) -> Force Startup with PV Only                                
-    modbus_controller_id: fast
+    modbus_controller_id: inverter_modbus
     id: force_startup_with_pv_only
     name: "${cat3} Force Startup with PV Only"
     entity_category: config
